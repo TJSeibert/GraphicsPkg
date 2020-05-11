@@ -1,0 +1,74 @@
+import javafx.application.Application;
+import javafx.stage.Stage;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import java.util.Scanner;
+import javafx.scene.layout.*;
+
+import javafx.scene.image.*;
+import javafx.scene.paint.*;
+import javafx.stage.*;
+
+public class Bresenham extends Application {
+
+	WritableImage wImage = new WritableImage(1000, 1000);
+	PixelWriter writer = wImage.getPixelWriter();
+	Color color = Color.RED;
+	
+	public void Bres(int x0, int y0, int x1, int y1){
+		int deltax = x1-x0;
+		int deltay = y1-y0;
+		int err = 2 * (deltay - deltax);
+		int inc1 = 2 * deltay;
+		int inc2 = 2 * (deltay - deltax);
+		int y = y0;
+		int x = x0;
+		
+		do {
+			writer.setColor(x, y, color);
+			if (err < 0)
+			{
+				err = err + inc1;
+			}
+			else
+			{
+				y = y+1;
+				err = err + inc2;
+			}
+			x = x + 1;
+		} while (x < x1);
+		
+	}
+	
+	@Override
+	public void start(Stage primaryStage) {
+		System.out.println("Please input the number of lines you'd like to draw: ");
+		Scanner input = new Scanner(System.in);
+		int number = input.nextInt();
+		
+		long startTime = System.nanoTime();
+		for (int i = 0; i < number; i++)
+		{
+			int x0 = 0;//(int)(Math.random() * 600);
+			int y0 = 0;//(int)(Math.random() * 600);
+			int x1 = (int)(Math.random() * 1000);
+			int y1 = (int)(Math.random() * 1000);
+			Bres(x0, y0, x1, y1);
+		}
+		long endTime = System.nanoTime();
+		long duration = (endTime - startTime)/1000000;
+		System.out.println("The time it took to draw " + number + " lines is " + duration + "milliseconds.");
+		
+		primaryStage.setTitle("Lines");
+		
+		ImageView image = new ImageView(wImage);
+		Group root = new Group(image);
+		Scene scene = new Scene(root, 1000, 1000);
+		primaryStage.setScene(scene);
+		primaryStage.show();
+	}
+
+	public static void main(String[] args) {
+		launch(args);
+	}
+}

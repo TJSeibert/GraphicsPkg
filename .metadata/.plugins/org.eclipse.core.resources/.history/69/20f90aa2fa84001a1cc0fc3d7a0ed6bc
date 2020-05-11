@@ -1,0 +1,528 @@
+import javafx.application.Application;
+import javafx.stage.Stage;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+import javafx.scene.image.*;
+import javafx.scene.paint.*;
+
+public class Program4 extends Application {
+
+	WritableImage wImage = new WritableImage(1000, 1000);
+	PixelWriter writer = wImage.getPixelWriter();
+	Color color = Color.RED;
+	double Vsx = 500;
+	double Vsy = 500;
+	double Vcx = 500;
+	double Vcy = 500;
+	double s = 50;
+	double d = 2.5;
+	
+	/**
+	 * Bresenham's line scan conversion algorithm. This algorithm
+	 * uses line clipping to establish a viewport.
+	 * 
+	 * @param x0 starting x coordinate of line
+	 * @param y0 starting y coordinate of line
+	 * @param x1 ending x coordinate of line
+	 * @param y1 ending y coordinate of line
+	 * @param color the color you'd like the line to be
+	 */
+	public void Bres(int x0, int y0, int x1, int y1, Color color){
+		int deltax; 
+		int deltay; 
+		int incx;
+		int incy;
+		int err;
+		int y;//= y0; //0
+		int x;//= x0; //0
+		
+		//if deltax will be positive
+		if (x1 >= x0)
+		{
+			deltax = x1 - x0;
+			incx = 1;
+		}
+		else // if negative, make it positive
+		{
+			deltax = x0 - x1;
+			incx = -1;
+		}
+		// if deltay will be positive
+		if (y1 >= y0)
+		{
+			deltay = y1 - y0;
+			incy = 1;
+		}
+		else // make it positive
+		{
+			deltay = y0 - y1;
+			incy = -1;
+		}
+		
+		x = x0;
+		y = y0;
+		
+		if (deltax >= deltay) // is slope is <= 1
+		{
+			deltay = deltay * 2;
+			err = deltay - deltax;
+			deltax = deltax * 2;
+			
+			while (x != x1)
+			{
+				writer.setColor(x, y, color);
+				
+				if (err >= 0)
+				{
+					y += incy;
+					err -= deltax;
+				}
+				err += deltay;
+				x += incx;
+			}
+				//writer.setColor(x, y, color);
+		}
+		else // if slope greater than 1
+		{
+			deltax = deltax * 2;
+			err = deltax - deltay;
+			deltay = deltay * 2;
+			
+			while (y != y1)
+			{
+				writer.setColor(x, y, color);
+					
+				if (err >= 0)
+				{
+					x += incx;
+					err -= deltay;
+				}
+				err += deltax;
+				y += incy;
+			}
+					//writer.setColor(x, y, color);
+		}
+		return;
+		
+	}
+	
+	/**
+	 * Draws the viewport in green.
+	 * 
+	*public void Viewport_spec(int Vx0, int Vy0, int Vx1, int Vy1){
+	*	Bres(0, 0, 1000, 1000, Vx0, Vy0, Vx1, Vy0, Color.GREEN);
+	*	Bres(0, 0, 1000, 1000, Vx1, Vy0, Vx1, Vy1, Color.GREEN);
+		Bres(0, 0, 1000, 1000, Vx0, Vy1, Vx1, Vy1, Color.GREEN);
+		Bres(0, 0, 1000, 1000, Vx0, Vy0, Vx0, Vy1, Color.GREEN);
+	}*/
+	
+	/**
+	 * Draws the lines in datalines using Bresenham's line scan conversion
+	 * algorithm.
+	 * 
+	 * @param datalines the list of lines
+	 * @param num the number of lines
+	 * @param Vx0 the starting x coordinate for the viewport
+	 * @param Vy0 the starting y coordinate for the viewport
+	 * @param Vx1 the ending x coordinate for the viewport
+	 * @param Vy1 the ending y coordinate for the viewport
+	 */
+	public void DisplayPixels(int[][] datalines)
+	{
+		for (int i = 0; i < datalines.length; i++)
+		{
+			Bres(datalines[i][0], datalines[i][1], datalines[i][2], datalines[i][3], Color.RED);
+		}
+	}
+	
+	/**
+	 * Uses matrix multiplication to apply a transformation to datalines.
+	 * 
+	 * @param matrix the transformation matrix.
+	 * @param datalines a 2d array of start and end points for lines.
+	 */
+	public void ApplyTransformation(int[][] matrix, int[][] datalines)
+	{
+		int[] line;
+		int newX1 = 0, newY1 = 0, newX2 = 0, newY2 = 0;
+		int r0, r1, r2;
+		for (int i = 0; i < datalines.length; i++)
+		{
+			line = datalines[i];
+			for (int j = 0; j < 4; j++){
+				if (j == 0){
+					r0 = matrix[0][0];
+					r1 = matrix[1][0];
+					r2 = matrix[2][0];
+					newX1 = line[0]*r0 + line[0]*r1 + 1*r2; 
+				}
+				if (j == 1){
+					r0 = matrix[0][1];
+					r1 = matrix[1][1];
+					r2 = matrix[2][1];
+					newY1 = line[1]*r0 + line[1]*r1 + 1*r2; 
+				}
+				if (j == 2){
+					r0 = matrix[0][0];
+					r1 = matrix[1][0];
+					r2 = matrix[2][0];
+					newX2 = line[2]*r0 + line[2]*r1 + 1*r2; 
+				}
+				if (j == 3){
+					r0 = matrix[0][1];
+					r1 = matrix[1][1];
+					r2 = matrix[2][1];
+					newY2 = line[1]*r0 + line[1]*r1 + 1*r2; 
+				}
+			}
+			
+			datalines[i][0] = newX1;
+			datalines[i][1] = newY1;
+			datalines[i][2] = newX2;
+			datalines[i][3] = newY2;
+			
+		}
+	}
+	
+	/**
+	 * Perform basic 3d transformation.
+	 * 
+	 *
+	 */
+	public double[][] BasicTranslate(double[][] datalines, int tx, int ty, int tz)
+	{
+		double newx0=0, newy0=0, newz0=0, newx1=0, newy1=0, newz1=0;
+		double x0=0,y0=0, z0=0,x1=0,y1=0,z1=0;
+		
+		double[][] result = new double[datalines.length][datalines[0].length]; 
+		for (int i = 0; i < datalines.length; i++)
+		{
+			x0 = datalines[i][0];
+			y0 = datalines[i][1];
+			z0 = datalines[i][2];
+			x1 = datalines[i][3];
+			y1 = datalines[i][4];
+			z1 = datalines[i][5];
+			
+			newx0 = x0 + tx;
+			newy0 = y0 + ty;
+			newz0 = z0 + tz;
+			newx1 = x1 + tx;
+			newy1 = y1 + ty;
+			newz1 = z1 + tz;
+			
+			result[i][0] = newx0;
+			result[i][1] = newy0;
+			result[i][2] = newz0;
+			result[i][3] = newx1;
+			result[i][4] = newy1;
+			result[i][5] = newz1;
+			
+		}
+		
+		return result;
+		
+	}
+	
+	/**
+	 * Results in the transformation matrix for basic scale.
+	 * 
+	 * @param sx horizontal scaling factor
+	 * @param sy vertical scaling factor
+	 * @return a 2d int array representing a matrix
+	 */
+	public double[][] BasicScale(double[][] datalines, int sx, int sy, int sz)
+	{
+		double newx0=0, newy0=0, newz0=0, newx1=0, newy1=0, newz1=0;
+		double x0=0,y0=0, z0=0,x1=0,y1=0,z1=0;
+		
+		double[][] result = new double[datalines.length][datalines[0].length]; 
+		for (int i = 0; i < datalines.length; i++)
+		{
+			x0 = datalines[i][0];
+			y0 = datalines[i][1];
+			z0 = datalines[i][2];
+			x1 = datalines[i][3];
+			y1 = datalines[i][4];
+			z1 = datalines[i][5];
+			
+			newx0 = x0 * sx;
+			newy0 = y0 * sy;
+			newz0 = z0 * sz;
+			newx1 = x1 * sx;
+			newy1 = y1 * sy;
+			newz1 = z1 * sz;
+			
+			result[i][0] = newx0;
+			result[i][1] = newy0;
+			result[i][2] = newz0;
+			result[i][3] = newx1;
+			result[i][4] = newy1;
+			result[i][5] = newz1;
+			
+		}
+		
+		return result;
+		
+	}
+	
+	/**
+	 * Results in the transformation matrix for basic rotate.
+	 * 
+	 * @param angle the angle to rotate by
+	 * @return a 2d array representing a matrix
+	 */
+	public double[][] BasicRotate(double[][] datalines, double angle, boolean x, boolean y, boolean z)
+	{
+		double radians = Math.toRadians(angle);
+		double[][] result = new double[datalines.length][datalines[0].length];
+		double newx0=0, newy0=0, newz0=0, newx1=0, newy1=0, newz1=0;
+		double x0=0,y0=0, z0=0,x1=0,y1=0,z1=0;
+		for (int i = 0; i < datalines.length; i++)
+		{
+			x0 = datalines[i][0];
+			y0 = datalines[i][1];
+			z0 = datalines[i][2];
+			x1 = datalines[i][3];
+			y1 = datalines[i][4];
+			z1 = datalines[i][5];
+			
+			if (x = true)
+			{
+				newx0 = x0;
+				newy0 = (y0 * Math.cos(angle)) + (z0 * (-1*(Math.sin(angle)))); 
+				newz0 = (y0 * Math.sin(angle)) + (z0 * Math.cos(angle));
+				newx1 = x1;
+				newy1 = (y1 * Math.cos(angle)) + (z1 * (-1*(Math.sin(angle)))); 
+				newz1 = (y1 * Math.sin(angle)) + (z1 * Math.cos(angle));
+			}
+			if (y = true)
+			{
+				newx0 = (x0 * Math.cos(angle)) + (z0 * Math.sin(angle));
+				newy0 = y0;
+				newz0 = (x0 * (-1*(Math.sin(angle)))) + (z0 * Math.cos(angle));
+				newx1 = (x1 * Math.cos(angle)) + (z1 * Math.sin(angle));
+				newy1 = y1;
+				newz1 = (x1 * (-1*(Math.sin(angle)))) + (z1 * Math.cos(angle));
+			}
+			if (z = true)
+			{
+				newx0 = (x0 * Math.cos(angle)) + (y0 * (-1*(Math.sin(angle))));
+				newy0 = (x0 * Math.sin(angle)) + (y0 * Math.cos(angle));
+				newz0 = z0;
+				newx1 = (x1 * Math.cos(angle)) + (y1 * (-1*(Math.sin(angle))));
+				newy1 = (x1 * Math.sin(angle)) + (y1 * Math.cos(angle));
+				newz1 = z1;
+			}
+			
+			result[i][0] = newx0;
+			result[i][1] = newy0;
+			result[i][2] = newz0;
+			result[i][3] = newx1;
+			result[i][4] = newy1;
+			result[i][5] = newz1;
+			
+		}
+		return result;
+	}
+	//Convert double array to int array
+	public int[][] convertToInt(double[][] datalines)
+	{
+		int[][] intArray = new int[datalines.length][datalines[0].length]; 
+		for (int i = 0; i < datalines.length; i++)
+		{
+			for (int j = 0; j < datalines[i].length; j++)
+			{
+				intArray[i][j] = (int) datalines[i][j];
+			}
+		}
+		return intArray;
+	}
+	
+	//output matrix of points in perspective projection
+	public double[][] perspectiveProjection(double[][] datalines)
+	{
+		double[][] result = new double[datalines.length][4];
+		double x1=0, y1=0, z1=0, x0=0, y0=0, z0=0;
+		double newx0=0, newy0=0, newx1=0, newy1=0;
+		
+		for (int i = 0; i < datalines.length; i++)
+		{
+			x0 = datalines[i][0];
+			y0 = datalines[i][1];
+			z0 = datalines[i][2];
+			x1 = datalines[i][3];
+			y1 = datalines[i][4];
+			z1 = datalines[i][5];
+		
+			newx0 = ((d * x0) / (s * z0)) * Vsx + Vcx; 
+			newy0 = ((d * y0) / (s * z0)) * Vsy + Vcy; 
+			newx1 = ((d * x1) / (s * z1)) * Vsx + Vcx; 
+			newy1 = ((d * y1) / (s * z1)) * Vsy + Vcy;
+			
+			result[i][0] = newx0;
+			result[i][1] = newy0;
+			result[i][2] = newx1;
+			result[i][3] = newy1;
+			
+		}
+		return result;
+	}
+	
+	/**
+	 * @param datalines the 2d int array housing coordinates
+	 * @param num the number of datalines
+	 * @return int num of lines read
+	 * @throws NumberFormatException
+	 * @throws IOException
+	 * 
+	 * 
+	 */
+	public int InputLines(double[][] datalines, int num) throws NumberFormatException, IOException{
+		 
+		int row = 0;
+		int column = 0;
+		Scanner input = new Scanner(new File("input.txt"));
+		while (input.hasNext())
+		{
+			datalines[row][column] = input.nextDouble();
+			column++;
+			if (column == 6)
+			{
+				column = 0;
+				row++;
+			}
+		}
+		input.close();
+		return num;
+	}
+	/**
+	 * Outputs the existing datalines into an output file output.txt.
+	 */
+	 public void OutputLines(double[][] datalines) throws IOException
+	 {
+		 BufferedWriter output;
+		 FileWriter fw = new FileWriter("output.txt");
+		 output = new BufferedWriter(fw);
+		 String s;
+		 for (int row = 0; row < datalines.length; row++)
+		 {
+			 if (row > 0){
+			 output.newLine();
+			 }
+			 for (int col = 0; col < datalines[row].length; col++)
+			 {
+				 s = String.valueOf(datalines[row][col]);
+				 output.write(s);
+				 output.write(" ");
+			 }
+		 }
+		 output.close();
+	 }
+	 
+	 public void flip(double[][] datalines)
+	 {
+		 return;
+	 }
+	@Override
+	public void start(Stage primaryStage) throws IOException {
+
+		double[][] datalines = new double[16][6];
+		int num = InputLines(datalines, 16);
+		int user = 0, userx = 0, usery=0, userz=0;
+		String userchar;
+		int Cx, Cy;
+		boolean x=false,y=false,z=false;
+		boolean isRunning = true;
+	
+		
+		Scanner input = new Scanner(System.in);
+		while (isRunning){
+			System.out.println("What operation would you like to perform?");
+			System.out.print("Select: \n"
+					+ "1 to display lines\n"
+					+ "2 for BasicTranslate\n"
+					+ "3 for BasicScale\n"
+					+ "4 for BasicRotate\n"
+					+ "5 for Scale\n"
+					+ "6 for Rotate\n"
+					+ "7 set a new ViewPort\n"
+					+ "0 to quit\n");
+			user = input.nextInt();
+			switch (user){
+				case 1: //displays the result to screen
+					isRunning = false;
+					double[][] ppArray = perspectiveProjection(datalines);
+					int[][] coordinates = convertToInt(ppArray);
+					DisplayPixels(coordinates);
+					primaryStage.setTitle("Lines");
+					ImageView image = new ImageView(wImage);
+					Group root = new Group(image);
+					Scene scene = new Scene(root, 1000, 1000);
+					primaryStage.setScene(scene);
+					primaryStage.show();
+					break;
+				case 2: //handles the basic translation process
+					System.out.println("Input x tranlation: ");
+					userx = input.nextInt();
+					System.out.println("Input y tranlation: ");
+					usery = input.nextInt();
+					System.out.println("Input z tranlation: ");
+					userz = input.nextInt();
+					datalines = BasicTranslate(datalines, userx, usery, userz);
+					OutputLines(datalines);
+					System.out.println("Translate Applied");
+					break;
+				case 3: //handles the basic scale process
+					System.out.println("Input x scale: ");
+					userx = input.nextInt();
+					System.out.println("Input y scale: ");
+					usery = input.nextInt();
+					System.out.println("Input z scale: ");
+					userz = input.nextInt();
+					datalines = BasicScale(datalines, userx, usery, userz);
+					OutputLines(datalines);
+					System.out.println("Basic Scale Applied");
+				    break;
+				case 4: // handles the basic rotate
+					System.out.println("Rotate around which axis? (x/y/z): ");
+					userchar = input.next();
+					if (userchar == "x")
+					{
+						x = true;
+					}
+					else if (userchar == "y")
+					{
+						y = true;
+					}
+					else if (userchar == "z")
+					{
+						z = true;
+					}
+					System.out.println("Input angle: ");
+					Double userangle = input.nextDouble();
+					datalines = BasicRotate(datalines, userangle, x, y, z);
+					OutputLines(datalines);
+					System.out.println("Basic Rotate Applied");
+					break;
+				case 9:
+					isRunning = false;
+					break;
+				
+				}
+		}
+		primaryStage.setTitle("Lines");
+		
+	}
+
+	public static void main(String[] args) {
+		launch(args);
+	}
+}

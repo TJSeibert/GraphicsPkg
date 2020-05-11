@@ -1,0 +1,337 @@
+import javafx.application.Application;
+import javafx.stage.Stage;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Scanner;
+import javafx.scene.layout.*;
+
+import javafx.scene.image.*;
+import javafx.scene.paint.*;
+import javafx.stage.*;
+
+public class Bresenham extends Application {
+
+	WritableImage wImage = new WritableImage(1000, 1000);
+	PixelWriter writer = wImage.getPixelWriter();
+	Color color = Color.RED;
+	int vpx0, vpx1, vpy0, vpy1; 
+	
+	/**
+	 * Bresenham's line drawing algorithm.
+	 * @param x0 starting x coordinate
+	 * @param y0 starting y coordinate
+	 * @param x1 ending x coordinate
+	 * @param y1 ending y coordinate
+	 */
+	public void Bres(int vpx0, int vpy0, int vpx1, int vpy1, 
+			int x0, int y0, int x1, int y1, Color color){
+		int deltax; 
+		int deltay; 
+		int incx;
+		int incy;
+		int err;
+		int y;//= y0; //0
+		int x;//= x0; //0
+		
+		//if deltax will be positive
+		if (x1 >= x0)
+		{
+			deltax = x1 - x0;
+			incx = 1;
+		}
+		else // if negative, make it positive
+		{
+			deltax = x0 - x1;
+			incx = -1;
+		}
+		// if deltay will be positive
+		if (y1 >= y0)
+		{
+			deltay = y1 - y0;
+			incy = 1;
+		}
+		else // make it positive
+		{
+			deltay = y0 - y1;
+			incy = -1;
+		}
+		
+		x = x0;
+		y = y0;
+		
+		if (deltax >= deltay) // is slope is <= 1
+		{
+			deltay = deltay * 2;
+			err = deltay - deltax;
+			deltax = deltax * 2;
+			
+			while (x != x1 && x > vpx0 && x < vpx1 && y > vpy0 && y < vpy1)
+			{
+				writer.setColor(x, y, color);
+				if (err >= 0)
+				{
+					y += incy;
+					err -= deltax;
+				}
+				err += deltay;
+				x += incx;
+			}
+			writer.setColor(x, y, color);
+		}
+		else // if slope greater than 1
+		{
+			deltax = deltax * 2;
+			err = deltax - deltay;
+			deltay = deltay * 2;
+			
+			while (y != y1 && x > vpx0 && x < vpx1 && y > vpy0 && y < vpy1)
+			{
+				writer.setColor(x, y, color);
+				if (err >= 0)
+				{
+					x += incx;
+					err -= deltay;
+				}
+				err += deltax;
+				y += incy;
+			}
+			writer.setColor(x, y, color);
+		}
+		return;
+		
+	}
+	
+	public void Viewport_spec(int Vx0, int Vy0, int Vx1, int Vy1){
+		Bres(0, 0, 1000, 1000, Vx0, Vy0, Vx1, Vy0, Color.GREEN);
+		Bres(0, 0, 1000, 1000, Vx1, Vy0, Vx1, Vy1, Color.GREEN);
+		Bres(0, 0, 1000, 1000, Vx0, Vy1, Vx1, Vy1, Color.GREEN);
+		Bres(0, 0, 1000, 1000, Vx0, Vy0, Vx0, Vy1, Color.GREEN);
+	}
+	
+	public void DisplayPixels(int[][] datalines, int num, int Vx0, int Vy0, int Vx1, int Vy1)
+	{
+		for (int i = 0; i < datalines.length; i++)
+		{
+			Bres(Vx0, Vy0, Vx1, Vy1, datalines[i][0], datalines[i][1], datalines[i][2], datalines[i][3], Color.RED);
+		}
+	}
+	
+	public void ApplyTransformation(int[][] matrix, int[][] datalines)
+	{
+		int[] line;
+		int newX1 = 0, newY1 = 0, newX2 = 0, newY2 = 0;
+		int r0, r1, r2;
+		for (int i = 0; i < datalines.length; i++)
+		{
+			line = datalines[i];
+			for (int j = 0; j < 4; j++){
+				if (j == 0){
+					r0 = matrix[0][0];
+					r1 = matrix[1][0];
+					r2 = matrix[2][0];
+					newX1 = line[0]*r0 + line[0]*r1 + 1*r2; 
+				}
+				if (j == 1){
+					r0 = matrix[0][1];
+					r1 = matrix[1][1];
+					r2 = matrix[2][1];
+					newY1 = line[1]*r0 + line[1]*r1 + 1*r2; 
+				}
+				if (j == 2){
+					r0 = matrix[0][0];
+					r1 = matrix[1][0];
+					r2 = matrix[2][0];
+					newX2 = line[2]*r0 + line[2]*r1 + 1*r2; 
+				}
+				if (j == 3){
+					r0 = matrix[0][1];
+					r1 = matrix[1][1];
+					r2 = matrix[2][1];
+					newY2 = line[1]*r0 + line[1]*r1 + 1*r2; 
+				}
+			}
+			
+			datalines[i][0] = newX1;
+			datalines[i][1] = newY1;
+			datalines[i][2] = newX2;
+			datalines[i][3] = newY2;
+			
+		}
+	}
+	
+	public int[][] BasicTranslate(int tx, int ty)
+	{
+		int[][] matrix = {{1, 0, 0 }, {0, 1, 0}, {tx, ty, 1}};
+		return matrix;
+	}
+	public int[][] BasicScale(int sx, int sy)
+	{
+		int[][] matrix = {{sx, 0, 0 }, {0, sy, 0}, {0, 0, 1}};
+		return matrix;
+	}
+	public double[][] BasicRotate(double angle)
+	{
+		double radians = Math.toRadians(angle);
+		double[][] matrix = {{Math.cos(radians), -(Math.sin(radians)), 0 }, {Math.sin(radians), Math.cos(radians), 0}, {0, 0, 1}};
+		return matrix;
+	}
+	
+	public int[][] Scale(int sx, int sy, int cx, int cy)
+	{
+		int[][] matrix = {{sx, 0, 0 }, {0, sy, 0}, {-(cx), -(cy), 1}};
+		return matrix;
+	}
+	
+	public double[][] Rotate(double angle, int cx, int cy)
+	{
+		double radians = Math.toRadians(angle);
+		double[][] matrix = {{Math.cos(radians), -(Math.sin(radians)), 0 }, {Math.sin(radians), Math.cos(radians), 0}, {-(cx), -(cy), 1}};
+		return matrix;
+	}
+	
+	
+	
+	public void InputLines(int[][] datalines, int num) throws NumberFormatException, IOException{
+		 
+		String line;
+		int count = 0;
+		int row = 0;
+		int column = 0;
+		Scanner input = new Scanner(new File("input.txt"));
+		while (input.hasNext())
+		{
+			datalines[row][column] = input.nextInt();
+			column++;
+			if (column == 4)
+			{
+				column = 0;
+				row++;
+			}
+		}
+		//input.close();
+		//return column+1;
+	}
+	 public void OutputLines(int[][] datalines, int num) throws IOException
+	 {
+		 BufferedWriter output;
+		 FileWriter fw = new FileWriter("output.txt");
+		 output = new BufferedWriter(fw);
+		 String s;
+		 for (int row = 0; row < datalines.length; row++)
+		 {
+			 output.newLine();
+			 for (int col = 0; col < datalines[row].length; col++)
+			 {
+				 s = String.valueOf(datalines[row][col]);
+				 output.write(s);
+				 output.write(" ");
+			 }
+		 }
+		 output.close();
+	 }
+	@Override
+	public void start(Stage primaryStage) throws IOException {
+
+		//System.out.println("Hello");
+		int[][] datalines = new int[4][4];
+		int num = 4;
+		int user = 0, userx = 0, usery=0;
+		boolean isRunning = true;
+		
+		InputLines(datalines, num);
+
+		while (isRunning){
+			System.out.println("Welcome! First, please input the coordinates for the ViewPort (Max 0,0,1000,1000):\n");
+			System.out.println("Input Vx0: ");
+			Scanner input = new Scanner(System.in);
+			int vpx0 = input.nextInt();
+			System.out.println("\nInput Vy0: ");
+			int vpy0 = input.nextInt();
+			System.out.println("\nInput Vx1: ");
+			int vpx1 = input.nextInt();
+			System.out.println("\nInput Vy1: ");
+			int vpy1 = input.nextInt();
+			Viewport_spec(vpx0, vpy0, vpx1, vpy1);
+			System.out.println("What operation would you like to perform?");
+			System.out.print("Select: \n"
+					+ "1 for DisplayLines\n"
+					+ "2 for BasicTranslate\n"
+					+ "3 for BasicScale\n"
+					+ "4 for BasicRotate\n"
+					+ "5 to change the Viewport\n"
+					+ "9 to quit");
+			user = input.nextInt();
+			switch (user){
+				case 1:
+					isRunning = false;
+					DisplayPixels(datalines, num, vpx0, vpy0, vpx1, vpy1);
+					primaryStage.setTitle("Lines");
+					ImageView image = new ImageView(wImage);
+					Group root = new Group(image);
+					Scene scene = new Scene(root, 1000, 1000);
+					primaryStage.setScene(scene);
+					primaryStage.show();
+					break;
+				case 2:
+					System.out.println("Input horizontal tranlation: ");
+					userx = input.nextInt();
+					System.out.println("Input vertical tranlation: ");
+					usery = input.nextInt();
+					ApplyTransformation(BasicTranslate(userx, usery), datalines);
+					System.out.println("Translate Applied");
+					break;
+				case 3:
+					System.out.println("Input horizontal scale: ");
+					userx = input.nextInt();
+					System.out.println("Input vertical scale: ");
+					usery = input.nextInt();
+					ApplyTransformation(BasicScale(userx, usery), datalines);
+					System.out.println("Basic Scale Applied");
+				    break;
+				case 4:
+					System.out.println("Input angle: ");
+					userx = input.nextInt();
+					//ApplyTransformation(BasicRotate(userx, usery), datalines);
+					System.out.println("Basic Scale Applied");
+					break;
+				case 5: 
+					System.out.println("Input bottom left and top left coordinates for viewport:\n");
+					System.out.println("Input Vx0: ");
+					int Vx0 = input.nextInt();
+					System.out.println("\nInput Vy0: ");
+					int Vy0 = input.nextInt();
+					System.out.println("\nInput Vx1: ");
+					int Vx1 = input.nextInt();
+					System.out.println("\nInput Vy1: ");
+					int Vy1 = input.nextInt();
+					Viewport_spec(Vx0, Vy0, Vx1, Vy1);
+					break;
+				case 9:
+					isRunning = false;
+					break;
+				
+				}
+		}
+		primaryStage.setTitle("Lines");
+		
+		//ImageView image = new ImageView(wImage);
+		//Group root = new Group(image);
+		//Scene scene = new Scene(root, 1000, 1000);
+		//primaryStage.setScene(scene);
+		//primaryStage.show();
+	}
+
+	public static void main(String[] args) {
+		launch(args);
+	}
+}

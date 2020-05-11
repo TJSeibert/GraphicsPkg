@@ -1,0 +1,69 @@
+
+import javafx.application.Application;
+import javafx.stage.Stage;
+import javafx.scene.Group;
+import javafx.scene.Scene;
+import java.util.Scanner;
+import javafx.scene.layout.*;
+
+import javafx.scene.image.*;
+import javafx.scene.paint.*;
+import javafx.stage.*;
+
+public class LinesMain extends Application {
+	
+	WritableImage wImage = new WritableImage(600, 600);
+	PixelWriter writer = wImage.getPixelWriter();
+	Color color = Color.RED;
+	
+	public void BasicAlg(int x0, int y0, int x1, int y1){
+		int deltax = x1-x0;
+		int deltay = y1-y0;
+		int m = deltay/deltax;
+		int x, yy;
+		double y;
+		for (int i = 0; (i <= (deltax-1)); i++)
+		{
+			x = x0 + i;
+			//y = m * i + y0;
+			//yy = (int)y;
+			yy = y0 + deltay * (i - x0) / deltax;
+			writer.setColor(x, yy, color);
+		}
+	}
+	
+	@Override
+	public void start(Stage primaryStage) {
+		System.out.println("Please input the number of lines you'd like to draw: ");
+		Scanner input = new Scanner(System.in);
+		int number = input.nextInt();
+		
+		long startTime = System.nanoTime();
+		for (int i = 0; i < number; i++)
+		{
+			int x0 = 0;//(int)(Math.random() * 600);
+			int y0 = 0;//(int)(Math.random() * 600);
+			int x1 = (int)(Math.random() * 600);
+			int y1 = (int)(Math.random() * 600);
+			BasicAlg(x0, y0, x1, y1);
+		}
+		long endTime = System.nanoTime();
+		long duration = (endTime - startTime)/1000000;
+		System.out.println("The time it took to draw " + number + " lines is " + duration + "milliseconds.");
+		
+		primaryStage.setTitle("Lines");
+		
+		ImageView image = new ImageView(wImage);
+		Group root = new Group(image);
+		Scene scene = new Scene(root, 600, 600);
+		primaryStage.setScene(scene);
+		primaryStage.show();
+		
+	}
+
+	public static void main(String[] args) {
+		launch(args);
+	}
+}
+
+
